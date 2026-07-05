@@ -11,6 +11,7 @@ Last updated: 2026-07-05 21:58 (Local Time)
   - `/api/agent/research`: Rate limited to **2** researches per day.
   - `/api/resume/generate` and `/api/resume/extract`: Combined rate limit of **5** resume actions per day.
 - **Source Link Bug Fix (`components/job-details/CompanyResearch.tsx`)**: Refactored the source renderer so that only strings starting with `http://` or `https://` are rendered as clickable `<a>` tags. All other non-URL source strings (e.g., `"JOB POSTING"`, `"CANDIDATE PROFILE"`) are rendered as styled plain-text badges.
+- **SEO & WhatsApp Previews (`app/layout.tsx`)**: Configured dynamic Next.js Metadata including Open Graph (OG) properties and Twitter Cards. Integrated a lightweight logo preview image (`/logo.png`, 35KB) for reliable WhatsApp link sharing previews, and large-card previews (`/images/dashboard-demo.png`) for Slack and Twitter.
 
 ## Decisions made
 
