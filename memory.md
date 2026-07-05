@@ -23,6 +23,7 @@ Last updated: 2026-07-05 21:58 (Local Time)
 
 - **Browserbase & Stagehand Cost Protection**: Strictly limited the headless company research agent to 2 runs/day, as Browserbase sessions are highly resource-intensive.
 - **Redirect loop / 404 Bug**: Fixed the issue where clicking semantic sources (like `"JOB POSTING"`) redirected the user to `/find-jobs/JOB%20POSTING` (displaying a "Job listing not found" error page).
+- **DOMMatrix Undefined Error on Vercel**: Fixed by adding `pdf-parse` to `serverExternalPackages` in `next.config.ts` and importing `pdf-parse/worker` directly in the extract endpoint, avoiding Vercel serverless bundle evaluation crashes.
 
 ## Current state
 
