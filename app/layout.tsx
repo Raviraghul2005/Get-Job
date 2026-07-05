@@ -13,6 +13,9 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL
     ? `https://${process.env.VERCEL_URL}`
     : "https://get-job-eta.vercel.app";
 
+const ogImagePath = "/images/image-1783272445352.png";
+const ogImageUrl = `${baseUrl}${ogImagePath}`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
@@ -23,13 +26,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: "JobPilot - AI-Powered Job Hunting Assistant",
     description: "Stop applying blind. JobPilot finds the jobs, researches the companies, and matches your profile in seconds.",
+    url: baseUrl,
     siteName: "JobPilot",
     images: [
       {
-        url: "/logo.png",
-        width: 512,
-        height: 512,
-        alt: "JobPilot Logo",
+        url: ogImageUrl,
+        width: 1200,
+        height: 630,
+        alt: "JobPilot dashboard preview",
       },
     ],
     locale: "en_US",
@@ -39,7 +43,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "JobPilot - AI-Powered Job Hunting Assistant",
     description: "Stop applying blind. JobPilot finds the jobs, researches the companies, and matches your profile in seconds.",
-    images: ["/images/dashboard-demo.png"],
+    images: [ogImageUrl],
   },
 };
 
