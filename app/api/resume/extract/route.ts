@@ -2,13 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createInsforgeServer } from "@/lib/insforge-server";
 import { GoogleGenAI } from "@google/genai";
 import { PDFParse } from "pdf-parse";
-import { pathToFileURL } from "url";
-import path from "path";
+import "pdf-parse/worker";
 import { checkRateLimit } from "@/lib/rate-limit";
-
-// Configure absolute worker path to prevent module resolution failures in Next.js Turbopack dev server
-const workerPath = path.resolve(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs");
-PDFParse.setWorker(pathToFileURL(workerPath).href);
 
 export async function POST(req: NextRequest) {
   try {
