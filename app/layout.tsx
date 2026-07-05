@@ -8,8 +8,35 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "JobPilot - AI-Powered Job Hunting Assistant",
-  description: "Set up your profile, upload your resume, discover relevant jobs, and apply with one click.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://jobpilot-getjob.vercel.app"
+  ),
+  title: {
+    default: "JobPilot - AI-Powered Job Hunting Assistant",
+    template: "%s | JobPilot",
+  },
+  description: "Stop applying blind. JobPilot finds the jobs, researches the companies, and matches your profile in seconds.",
+  openGraph: {
+    title: "JobPilot - AI-Powered Job Hunting Assistant",
+    description: "Stop applying blind. JobPilot finds the jobs, researches the companies, and matches your profile in seconds.",
+    siteName: "JobPilot",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "JobPilot Logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "JobPilot - AI-Powered Job Hunting Assistant",
+    description: "Stop applying blind. JobPilot finds the jobs, researches the companies, and matches your profile in seconds.",
+    images: ["/images/dashboard-demo.png"],
+  },
 };
 
 export default function RootLayout({
