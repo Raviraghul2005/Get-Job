@@ -7,10 +7,14 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+  ? process.env.NEXT_PUBLIC_APP_URL
+  : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "https://get-job-eta.vercel.app";
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "https://jobpilot-getjob.vercel.app"
-  ),
+  metadataBase: new URL(baseUrl),
   title: {
     default: "JobPilot - AI-Powered Job Hunting Assistant",
     template: "%s | JobPilot",
