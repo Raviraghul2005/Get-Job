@@ -248,7 +248,7 @@ const jobRecord = {
 - Never pass `where` if location is empty — omit the parameter entirely
 - `source` is always `'search'` for Adzuna jobs — never any other value
 - `salary_is_predicted: "1"` means Adzuna estimated the salary — this is normal
-- Adzuna description is a snippet — GPT-4o scores from it, not a full description
+- Adzuna description is a snippet — Gemini 2.5 Flash scores from it, not a full description
 - Default country to `'us'` — support `gb`, `au`, `ca` as alternatives
 
 ---
@@ -298,7 +298,7 @@ const stagehand = new Stagehand({
   apiKey: process.env.BROWSERBASE_API_KEY!,
   projectId: process.env.BROWSERBASE_PROJECT_ID!,
   browserbaseSessionID: session.id,
-  model: { modelName: "openai/gpt-4o", apiKey: process.env.OPENAI_API_KEY! },
+  model: { modelName: "google/gemini-2.5-flash", apiKey: process.env.GEMINI_API_KEY! },
   disablePino: true,
 });
 
@@ -351,7 +351,7 @@ Replace the existing Stagehand "Company Research Pattern" section in library-doc
 
 ### Company Research Pattern
 
-Three-step process: homepage extraction → sub-page extraction → GPT-4o synthesis.
+Three-step process: homepage extraction → sub-page extraction → Gemini 2.5 Flash synthesis.
 Job description and user profile come from DB — never re-fetch what you already have.
 Browser's only job is the company website.
 
@@ -412,7 +412,7 @@ const subPageData = await stagehand.extract({
   }),
 });
 
-// Step 3 — GPT-4o synthesis (after browser closes)
+// Step 3 — Gemini 2.5 Flash synthesis (after browser closes)
 // Feed three data sources: company research + job from DB + profile from DB
 const systemPrompt = `You are a sharp career strategist preparing a candidate to apply for a specific role. You are given (a) research collected from the company's own website, (b) the job posting, and (c) the candidate's profile. Produce a concise, concrete briefing that gives this specific candidate an edge for this specific role.
 
@@ -452,14 +452,13 @@ Experience: ${profile.years_experience} years, level ${profile.experience_level}
 Skills: ${profile.skills.join(", ")}
 Work history: ${JSON.stringify(profile.work_experience)}`;
 
-const response = await openai.chat.completions.create({
-  model: "gpt-4o",
-  response_format: { type: "json_object" },
-  temperature: 0.4,
-  messages: [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-  ],
+const response = await ai.models.generateContent({
+  model: "gemini-2.5-flash",
+  contents: `${systemPrompt}\n\n${userPrompt}`,
+  config: {
+    responseMimeType: "application/json",
+    temperature: 0.4,
+  },
 });
 ```
 
@@ -482,7 +481,7 @@ const response = await openai.chat.completions.create({
 - Always use `extract()` with a Zod schema — never parse raw HTML or use regex
 - Always wrap every `act()` and `extract()` in try/catch
 - Always call `await stagehand.close()` when done — ends the Browserbase session
-- Model is always `gpt-4o` — never use other models
+- Model is always `gemini-2.5-flash` — never use other models
 - Temperature is `0.4` for synthesis — grounded but flexible enough to make real connections
 - Max 3 sub-pages — never exceed this on free plan
 - Always close session in finally block — never leave sessions open even if research fails
@@ -490,34 +489,62 @@ const response = await openai.chat.completions.create({
 - If browser research returns empty — still run synthesis with job + profile only
 - yourEdge, gapsToAddress, and smartQuestions are the most valuable fields — never skip them
 
-## OpenAI GPT-4o
+## Groq API (Llama 3.3 70B)
 
-**Check first:** Check AGENTS.md for an installed OpenAI skill. The skill will have the latest API patterns and model capabilities.
+Groq is utilized for job match scoring to bypass Gemini's low Free Tier rate limits (5 RPM) and high demand errors (503). With ultra-fast LPU inference, Groq supports parallel scoring across discovered jobs.
+
+### Direct JSON Completions
+
+We use native `fetch` to query Groq's OpenAI-compatible completions endpoint to avoid extra packages.
+
+```typescript
+const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "llama-3.3-70b-versatile",
+    messages: [
+      { role: "system", content: "System prompt instructions..." },
+      { role: "user", content: "User prompt query..." }
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.3,
+  }),
+});
+
+const data = await response.json();
+const parsedResult = JSON.parse(data.choices[0].message.content);
+```
+
+**Rules:**
+- **Model**: Use `llama-3.3-70b-versatile` for high reasoning capability and fast JSON generation.
+- **JSON Mode**: Always specify `response_format: { type: "json_object" }` and instruct the model to return valid JSON in the system prompt.
+- **Server Side Only**: Groq calls must always run server-side (API Routes, Server Actions) — never expose `GROQ_API_KEY` to the client.
+
+## Gemini API (Gemini 2.5 Flash)
+
+**Check first:** Check AGENTS.md for an installed Gemini/Google Gen AI skill. The skill will have the latest API patterns and model capabilities.
 
 ### Structured JSON Response
 
 ```typescript
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-const response = await openai.chat.completions.create({
-  model: "gpt-4o",
-  response_format: { type: "json_object" },
-  temperature: 0.3,
-  messages: [
-    {
-      role: "system",
-      content: "You are a job matching assistant. Return only valid JSON.",
-    },
-    {
-      role: "user",
-      content: `Your prompt here`,
-    },
-  ],
+const response = await ai.models.generateContent({
+  model: "gemini-2.5-flash",
+  contents: `Your prompt here`,
+  config: {
+    responseMimeType: "application/json",
+    temperature: 0.3,
+  },
 });
 
-const result = JSON.parse(response.choices[0].message.content!);
+const result = JSON.parse(response.text!);
 ```
 
 **Temperature settings:**
@@ -534,9 +561,9 @@ const result = JSON.parse(response.choices[0].message.content!);
 
 **Rules:**
 
-- Model string is always `'gpt-4o'` — never use other model names
-- Always use `response_format: { type: 'json_object' }` for structured data
-- Always parse `response.choices[0].message.content` as string — even with json_object it returns a string
+- Model string is always `'gemini-2.5-flash'` — never use other model names
+- Always use `responseMimeType: "application/json"` for structured data
+- Always parse `response.text` as string — even with JSON output it returns a string
 - Always validate parsed JSON before using — wrap in try/catch
 - Match threshold is always `MATCH_THRESHOLD` from `lib/utils.ts` — never hardcode 70
 - Company research synthesis must always return a complete dossier — never return empty even if browser research failed
@@ -677,13 +704,13 @@ export async function POST(req: NextRequest) {
   const pdfData = await pdf(buffer);
   const extractedText = pdfData.text; // raw text content
 
-  // Send to GPT-4o for structured extraction
+  // Send to Gemini 2.5 Flash for structured extraction
 }
 ```
 
 **Rules:**
 
 - Server-side only — never import in client components
-- `pdfData.text` is raw unformatted text — GPT-4o handles the structure extraction
+- `pdfData.text` is raw unformatted text — Gemini 2.5 Flash handles the structure extraction
 - Always handle parse errors — some PDFs are image-based and return empty text
 - If `pdfData.text` is empty or very short — return error to user: "Could not extract text from this PDF. Please try a different file."

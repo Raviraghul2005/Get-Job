@@ -1,33 +1,36 @@
-# Memory — Database Schema & Storage Setup (Feature 04)
+# Memory — API Rate Limiting & Source Link Bug Fix
 
-Last updated: 2026-06-29 23:45 (Local Time)
+Last updated: 2026-07-05 21:58 (Local Time)
 
 ## What was built
 
-- **Database Schema**: Created PostgreSQL tables `profiles`, `agent_runs`, `jobs`, and `agent_logs` on the InsForge backend via raw SQL.
-- **Auto-Initialization Profile Trigger**: Setup Postgres trigger `on_auth_user_created` to automatically create a default row in `public.profiles` when a user registers in `auth.users`.
-- **Auto-Update Timestamp Trigger**: Setup trigger function `update_modified_column` to auto-update the `updated_at` column in `profiles` on update.
-- **Row Level Security (RLS) Policies**: Configured `SELECT`, `UPDATE`, `INSERT`, `ALL` policies on `profiles`, `agent_runs`, `jobs`, and `agent_logs` restricting all data mutation and visibility to the owner authenticated user (`auth.uid() = user_id`).
-- **Resumes Storage Bucket**: Created a private (authenticated access only, `isPublic: false`) storage bucket named `resumes` in InsForge Storage.
-- **Progress Tracker Updated**: Updated [progress-tracker.md](file:///d:/get-job/get-job/context/progress-tracker.md) marking features 03 and 04 as completed.
+- **Database-Backed Rate Limiter (`lib/rate-limit.ts`)**: Built a utility that enforces daily action limits per user. It performs a self-cleaning daily reset check (UTC-aligned) and updates usage counters atomically in the `profiles` table.
+- **Table Schema Migration**: Altered the `profiles` table in InsForge to add `searches_today`, `researches_today`, `resumes_today` (integers), and `last_reset_date` (date).
+- **Endpoint Protection**:
+  - `/api/agent/find`: Rate limited to **5** searches per day.
+  - `/api/agent/research`: Rate limited to **2** researches per day.
+  - `/api/resume/generate` and `/api/resume/extract`: Combined rate limit of **5** resume actions per day.
+- **Source Link Bug Fix (`components/job-details/CompanyResearch.tsx`)**: Refactored the source renderer so that only strings starting with `http://` or `https://` are rendered as clickable `<a>` tags. All other non-URL source strings (e.g., `"JOB POSTING"`, `"CANDIDATE PROFILE"`) are rendered as styled plain-text badges.
 
 ## Decisions made
 
-- **Profile Initialization**: Set up a PostgreSQL trigger on `auth.users` insert to automatically create a corresponding record in `public.profiles`.
-- **On Delete Behavior**: Deletes are set to cascade (`ON DELETE CASCADE`) on foreign keys referencing the `profiles` table to maintain integrity when a user account is removed.
+- **No Redis Dependency**: Chose database-backed rate limiting over Upstash Redis to keep the architecture simple, cost-free, and contained within the existing InsForge setup.
+- **Pessimistic Incrementing**: Counters are incremented at the *start* of the request (before expensive API operations run). This prevents users from bypassing limits by making concurrent API requests before a single request completes.
+- **Plain-Text Badges for Meta-Sources**: Kept semantic inputs from Gemini readable while disabling link-based routing for non-URL strings.
 
 ## Problems solved
 
-- None.
+- **Browserbase & Stagehand Cost Protection**: Strictly limited the headless company research agent to 2 runs/day, as Browserbase sessions are highly resource-intensive.
+- **Redirect loop / 404 Bug**: Fixed the issue where clicking semantic sources (like `"JOB POSTING"`) redirected the user to `/find-jobs/JOB%20POSTING` (displaying a "Job listing not found" error page).
 
 ## Current state
 
-- **Phase 1 — Foundation** is fully completed and verified.
-- Database tables, storage bucket, RLS policies, and triggers are all fully active.
+- All 17 core features from the build plan, the rate limiting system, and the source links fix are fully completed.
+- Next.js production build (`npm run build`) compiles successfully without warnings.
 
 ## Next session starts with
 
-- **Phase 2 — Profile Page — Full UI (Feature 05)**: Building the profile page UI (completion percentages, resume upload area, info forms, work experience, etc.) with mock data first.
+- **Vercel Production Deployment**: Deploying the Next.js application to Vercel and configuring environment variables (Adzuna, Browserbase, Gemini, InsForge, PostHog).
 
 ## Open questions
 

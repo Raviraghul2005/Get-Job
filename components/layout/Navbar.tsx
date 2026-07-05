@@ -3,6 +3,7 @@ import Image from "next/image";
 import { createInsforgeServer } from "@/lib/insforge-server";
 import { SignOutButton } from "./SignOutButton";
 import { PostHogIdentify } from "@/components/PostHogUser";
+import { NavLinks } from "./NavLinks";
 
 export async function Navbar() {
   let user = null;
@@ -31,26 +32,7 @@ export async function Navbar() {
         </Link>
 
         {/* Center Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8">
-          <Link
-            href="/dashboard"
-            className="text-sm font-medium text-text-dark hover:text-accent transition-colors"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/find-jobs"
-            className="text-sm font-medium text-text-dark hover:text-accent transition-colors"
-          >
-            Find Jobs
-          </Link>
-          <Link
-            href="/profile"
-            className="text-sm font-medium text-text-dark hover:text-accent transition-colors"
-          >
-            Profile
-          </Link>
-        </nav>
+        <NavLinks />
 
         {/* Right Action */}
         <div className="flex items-center gap-3">
